@@ -1,25 +1,19 @@
-import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
+// Todo: 
+// 1. Adjust command to make it include action and explanation 
+// 2. adjust command to allow for confirmation 
+// 3. adjust as package to call instead of having to call function
+
 import { ChatOpenAI } from "@langchain/openai";
 import { DynamicTool } from 'langchain/tools';
-import { pull } from "langchain/hub";
 import { createOpenAIFunctionsAgent } from "langchain/agents";
 import { AgentExecutor } from "langchain/agents";
 import {
     ChatPromptTemplate,
-    PromptTemplate,
-    SystemMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    HumanMessagePromptTemplate,
   } from "@langchain/core/prompts";
   import {
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-  } from "@langchain/core/messages";
-import os from 'os';
-import {
     MessagesPlaceholder,
   } from "@langchain/core/prompts";
+import os from 'os';
 import readline from 'readline';
 import { exec } from 'child_process';
 
@@ -44,33 +38,22 @@ const runCommand = query => {
         }
         return (`stdout: ${stdout}`, `stderr: ${stderr}`);
       });
-
-
 }
 
 const tools = [ SystemCommandTool ]
 
+// const promptTemplate = ChatPromptTemplate.fromTemplate(
+//     `You are my command line executor assistant. Give the exact command line output stdout if there is output from command line using the System Command Tool. 
+//     Take the query and execute the command line argument. Assume that we are on {platform} operative system. Query: {input_var}`
+// )
 
-// const promptTemplate2 = PromptTemplate.fromTemplate(`
-// You are my command line executor assistant. 
-// Limit your response to the word 'completed' and assume that we are on {platform} operative system:
-
-// {input_var}`
-// );
-
-const promptTemplate = ChatPromptTemplate.fromMessages([
-    ["system", "You are very powerful assistant, but don't know current events"],
-    ["human", `
-    You are my command line executor assistant. 
-    Limit your response to the word 'completed' and assume that we are on {platform} operative system:
-    
-    {input_var}`],
-    new MessagesPlaceholder("agent_scratchpad"),
-  ]);
-// const prompt = await promptTemplate.format({ 
-//     platform: os.platform(), 
-//     input: input 
-// })
+const promptTemplate = ChatPromptTemplate.fromMessages(
+    [
+        ("system", "You are my command line executor assistant."),
+        ("human", "Take the query and execute the command line argument. Assume that we are on {platform} operative system. Return strictly the output of the command line results using the Command System Tool. Do not add extra words. Query: {input_var}"),
+        new MessagesPlaceholder("agent_scratchpad"),
+    ]
+)
 
 const agent = await createOpenAIFunctionsAgent({tools: tools, llm: model, prompt: promptTemplate});
 
@@ -89,7 +72,7 @@ line.question('Please type in a command. \n', async (input) => {
         platform: os.platform(),
         input_var: input
       });
-    console.log({result});
+    console.log(result.output);
     line.close();
 });
 
